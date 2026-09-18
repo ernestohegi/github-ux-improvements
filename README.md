@@ -1,4 +1,4 @@
-# 📌 GitHub Sticky Header
+# 📌 GitHub UX Improvements
 
 A lightweight Tampermonkey userscript that pins GitHub's header to the top of your viewport as you scroll — plus a handy floating button to jump back to the top instantly.
 
