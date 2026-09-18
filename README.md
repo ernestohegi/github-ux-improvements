@@ -16,8 +16,9 @@ The script injects a small CSS snippet that forces GitHub's `.header-wrapper` to
 ## 📦 Installation
 
 1. Install the [Tampermonkey](https://www.tampermonkey.net/) browser extension (available for Chrome, Firefox, Edge, Safari, and more).
-2. Click below to install the script:
-   - [Install via raw script link](#) *(replace with your raw GitHub URL, e.g. `https://raw.githubusercontent.com/<you>/<repo>/main/github-sticky-header.user.js`)*
+2. Click **Create a new script** in Tampermonkey, or point it directly at your repo's raw file:
+   `https://raw.githubusercontent.com/<your-username>/<your-repo>/main/script.js`
+   Tampermonkey will detect the `.js` userscript and prompt you to install it automatically when you visit that URL.
 3. Tampermonkey will open an installation tab — click **Install**.
 4. Visit any page on `github.com` and enjoy your sticky header!
 
@@ -25,7 +26,7 @@ Alternatively, install manually:
 
 1. Open the Tampermonkey dashboard.
 2. Click **Create a new script**.
-3. Delete the boilerplate and paste in the contents of [`github-sticky-header.user.js`](./github-sticky-header.user.js).
+3. Delete the boilerplate and paste in the contents of [`script.js`](./script.js).
 4. Save with `Ctrl+S` / `Cmd+S`.
 
 ## ⚙️ Configuration
