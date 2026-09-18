@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub UX Improvements
 // @namespace    https://github.com/
-// @version      1.0.2
+// @version      1.0.3
 // @description  Makes the GitHub header fixed to the top of the viewport and adds padding to the main content so nothing is hidden behind it. Adds scroll-to-top and scroll-to-bottom buttons.
 // @author       Ernesto Hegi
 // @match        https://github.com/*
@@ -69,53 +69,90 @@
         document.head.appendChild(style);
     }
 
-    function addScrollButtons() {
+    let topBtn = null;
+    let bottomBtn = null;
+    let rafPending = false;
+
+    function ensureButtons() {
         if (!document.getElementById('gh-scroll-top-btn')) {
-            const topBtn = document.createElement('button');
+            topBtn = document.createElement('button');
             topBtn.id = 'gh-scroll-top-btn';
             topBtn.title = 'Scroll to top';
             topBtn.textContent = '↑';
-
             topBtn.addEventListener('click', function () {
                 window.scrollTo(0, 0);
             });
-
             document.body.appendChild(topBtn);
+        } else {
+            topBtn = document.getElementById('gh-scroll-top-btn');
         }
 
         if (!document.getElementById('gh-scroll-bottom-btn')) {
-            const bottomBtn = document.createElement('button');
+            bottomBtn = document.createElement('button');
             bottomBtn.id = 'gh-scroll-bottom-btn';
             bottomBtn.title = 'Scroll to bottom';
             bottomBtn.textContent = '↓';
-
             bottomBtn.addEventListener('click', function () {
                 window.scrollTo(0, document.body.scrollHeight);
             });
-
             document.body.appendChild(bottomBtn);
+        } else {
+            bottomBtn = document.getElementById('gh-scroll-bottom-btn');
         }
+    }
 
-        const topBtn = document.getElementById('gh-scroll-top-btn');
-        const bottomBtn = document.getElementById('gh-scroll-bottom-btn');
+    function toggleVisibility() {
+        if (!topBtn || !bottomBtn) return;
 
-        function toggleVisibility() {
-            const scrollY = window.scrollY;
-            const maxScroll = document.body.scrollHeight - window.innerHeight;
+        const scrollY = window.scrollY;
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
 
-            topBtn.style.display = scrollY > 200 ? 'flex' : 'none';
-            bottomBtn.style.display = (maxScroll - scrollY) > 200 ? 'flex' : 'none';
-        }
+        topBtn.style.display = scrollY > 200 ? 'flex' : 'none';
+        bottomBtn.style.display = (maxScroll - scrollY) > 200 ? 'flex' : 'none';
+    }
 
-        window.addEventListener('scroll', toggleVisibility, { passive: true });
-        window.addEventListener('resize', toggleVisibility, { passive: true });
-        toggleVisibility();
+    // Batch recalculations through rAF so rapid-fire events (resize observer,
+    // mutation observer, scroll) don't thrash layout.
+    function scheduleToggle() {
+        if (rafPending) return;
+        rafPending = true;
+        requestAnimationFrame(function () {
+            rafPending = false;
+            toggleVisibility();
+        });
+    }
+
+    function setup() {
+        ensureButtons();
+        scheduleToggle();
+
+        // Recalculate whenever the page's layout size actually changes —
+        // this catches lazy-loaded images, expanding file trees, etc.,
+        // which is what makes button visibility lag on first load.
+        const resizeObserver = new ResizeObserver(scheduleToggle);
+        resizeObserver.observe(document.documentElement);
+
+        window.addEventListener('scroll', scheduleToggle, { passive: true });
+        window.addEventListener('resize', scheduleToggle, { passive: true });
+
+        // GitHub is a Turbo/PJAX-driven SPA: most navigation doesn't reload
+        // the page, so re-check (and re-attach buttons if Turbo wiped them)
+        // whenever a new "page" is rendered in place.
+        document.addEventListener('turbo:load', function () {
+            ensureButtons();
+            scheduleToggle();
+        });
+        document.addEventListener('turbo:render', scheduleToggle);
+        document.addEventListener('pjax:end', function () {
+            ensureButtons();
+            scheduleToggle();
+        });
     }
 
     // document-start means body may not exist yet, so wait for it.
     if (document.body) {
-        addScrollButtons();
+        setup();
     } else {
-        document.addEventListener('DOMContentLoaded', addScrollButtons);
+        document.addEventListener('DOMContentLoaded', setup);
     }
 })();
