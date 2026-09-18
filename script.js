@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         GitHub UX Improvements
 // @namespace    https://github.com/
-// @version      1.0.1
-// @description  Makes the GitHub header fixed to the top of the viewport and adds padding to the main content so nothing is hidden behind it. Adds a scroll-to-top button.
+// @version      1.0.2
+// @description  Makes the GitHub header fixed to the top of the viewport and adds padding to the main content so nothing is hidden behind it. Adds scroll-to-top and scroll-to-bottom buttons.
 // @author       Ernesto Hegi
 // @match        https://github.com/*
 // @grant        GM_addStyle
@@ -24,9 +24,9 @@
             width: 100%;
         }
 
-        #gh-scroll-top-btn {
+        #gh-scroll-top-btn,
+        #gh-scroll-bottom-btn {
             position: fixed;
-            bottom: 24px;
             right: 24px;
             z-index: 1000;
             width: 44px;
@@ -46,7 +46,16 @@
             opacity: 0.85;
         }
 
-        #gh-scroll-top-btn:hover {
+        #gh-scroll-top-btn {
+            bottom: 24px;
+        }
+
+        #gh-scroll-bottom-btn {
+            bottom: 76px;
+        }
+
+        #gh-scroll-top-btn:hover,
+        #gh-scroll-bottom-btn:hover {
             opacity: 1;
             background-color: #30363d;
         }
@@ -60,32 +69,53 @@
         document.head.appendChild(style);
     }
 
-    function addScrollButton() {
-        if (document.getElementById('gh-scroll-top-btn')) return;
+    function addScrollButtons() {
+        if (!document.getElementById('gh-scroll-top-btn')) {
+            const topBtn = document.createElement('button');
+            topBtn.id = 'gh-scroll-top-btn';
+            topBtn.title = 'Scroll to top';
+            topBtn.textContent = '↑';
 
-        const btn = document.createElement('button');
-        btn.id = 'gh-scroll-top-btn';
-        btn.title = 'Scroll to top';
-        btn.textContent = '↑';
+            topBtn.addEventListener('click', function () {
+                window.scrollTo(0, 0);
+            });
 
-        btn.addEventListener('click', function () {
-            window.scrollTo(0, 0);
-        });
+            document.body.appendChild(topBtn);
+        }
 
-        document.body.appendChild(btn);
+        if (!document.getElementById('gh-scroll-bottom-btn')) {
+            const bottomBtn = document.createElement('button');
+            bottomBtn.id = 'gh-scroll-bottom-btn';
+            bottomBtn.title = 'Scroll to bottom';
+            bottomBtn.textContent = '↓';
+
+            bottomBtn.addEventListener('click', function () {
+                window.scrollTo(0, document.body.scrollHeight);
+            });
+
+            document.body.appendChild(bottomBtn);
+        }
+
+        const topBtn = document.getElementById('gh-scroll-top-btn');
+        const bottomBtn = document.getElementById('gh-scroll-bottom-btn');
 
         function toggleVisibility() {
-            btn.style.display = window.scrollY > 200 ? 'flex' : 'none';
+            const scrollY = window.scrollY;
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+
+            topBtn.style.display = scrollY > 200 ? 'flex' : 'none';
+            bottomBtn.style.display = (maxScroll - scrollY) > 200 ? 'flex' : 'none';
         }
 
         window.addEventListener('scroll', toggleVisibility, { passive: true });
+        window.addEventListener('resize', toggleVisibility, { passive: true });
         toggleVisibility();
     }
 
     // document-start means body may not exist yet, so wait for it.
     if (document.body) {
-        addScrollButton();
+        addScrollButtons();
     } else {
-        document.addEventListener('DOMContentLoaded', addScrollButton);
+        document.addEventListener('DOMContentLoaded', addScrollButtons);
     }
 })();
